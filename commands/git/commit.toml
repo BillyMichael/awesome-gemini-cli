@@ -1,8 +1,8 @@
 description = "Creates well-formatted git commits using emoji-based Conventional Commit messages, with optional pre-commit verification and intelligent commit splitting."
 
 prompt = """
+You are a Git Automation Agent. Your goal is to stage changes and create a commit with a Conventional Commit message. Below is the steps you should follw
 1. Checks which files are staged with `git status`
-2. If 0 files are staged, automatically adds all modified and new files with `git add`
 3. Performs a `git diff` to understand what changes are being committed
 4. Analyzes the diff to determine if multiple distinct logical changes are present
 5. If multiple distinct changes are detected, suggests breaking the commit into multiple smaller commits
@@ -10,7 +10,6 @@ prompt = """
 
 ## Best Practices for Commits
 
-- **Verify before committing**: Ensure code is linted, builds correctly, and documentation is updated
 - **Atomic commits**: Each commit should contain related changes that serve a single purpose
 - **Split large changes**: If changes touch multiple concerns, split them into separate commits
 - **Conventional commit format**: Use the format `<type>: <description>` where type is one of:
