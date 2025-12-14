@@ -1,0 +1,149 @@
+description = "Guides through creating catalog-info.yaml files for Spotify Backstage."
+
+prompt = """
+**Goal:** Onboard applications into the Spotify Backstage catalog system by creating `catalog-info.yaml` files for each identified component or system.
+
+**Instructions:**
+
+Follow these steps for each distinct component or system you identify within a given directory structure:
+
+### Step 1: Identify Components and Systems
+
+Thoroughly examine the directory to identify all separate components and systems. Look for common indicators such as:
+*   `package.json` (Node.js/JavaScript projects)
+*   `pom.xml` (Maven/Java projects)
+*   `build.gradle` (Gradle/Java projects)
+*   `requirements.txt` (Python projects)
+*   `Dockerfile` or containerization files
+*   Dedicated service directories (e.g., `backend-service/`, `frontend-app/`)
+*   Configuration files that imply a distinct deployable unit or logical grouping.
+
+Determine if each identified item is a `Component` (a deployable unit, library, or service) or a `System` (a logical grouping of related components).
+
+### Step 2: Create `catalog-info.yaml` for Each
+
+For each identified component or system, create a `catalog-info.yaml` file in its root directory. Adhere strictly to the following structure and guidelines:
+
+#### General Structure for `catalog-info.yaml`
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: <Component | System | API | Group | User | Location> # Choose the appropriate kind
+metadata:
+  name: <unique-entity-name> # kebab-case, globally unique identifier for the entity
+  description: <A brief, human-readable description of the entity>
+  annotations:
+    # Optional: Add annotations for external links or metadata
+    # For example, linking to GitHub repository:
+    # github.com/project-slug: 'your-github-org/your-repo-name'
+    # For TechDocs:
+    # backstage.io/techdocs-ref: 'url:https://your-docs-url.com'
+    # backstage.io/techdocs-ref: 'dir:.' # If docs are in the same repo, same directory
+  tags: # Optional: A list of tags for categorization
+    - <tag-1>
+    - <tag-2>
+  links: # Optional: External links related to the entity
+    - url: https://github.com/your-org/your-repo
+      title: GitHub Repository
+      icon: github
+    - url: https://your-docs-url.com
+      title: Documentation
+      icon: docs
+spec:
+  type: <service | website | library | documentation | other> # For Components
+  lifecycle: <experimental | production | deprecated> # Current maturity level
+  owner: <name-of-owning-team> # Reference to a Group entity in Backstage
+  owner: user:<username> # Reference to a User entity in Backstage
+  owner: group:<group-name> # Reference to a Group entity in Backstage
+  # For Components only:
+  # system: <name-of-parent-system> # Reference to a System entity this component belongs to
+  # dependsOn: # List of other entities this component depends on (Components or APIs)
+  #   - component:other-component
+  #   - api:some-external-api
+  # providesApi: # List of API entities this component provides
+  #   - api:my-rest-api
+  # consumesApi: # List of API entities this component consumes
+  #   - api:external-auth-api
+```
+
+#### Specific Guidelines and Constraints:
+
+1.  **System Entities (`kind: System`):**
+    *   **DO NOT** include a `system` inside `partOf` key in their `spec`. Systems are top-level logical groupings.
+    *   Their `spec.type` should usually be omitted or align with a logical system type if one exists in your Backstage instance.
+    *   Example for a System:
+        ```yaml
+        apiVersion: backstage.io/v1alpha1
+        kind: System
+        metadata:
+          name: authentication-system
+          description: Handles all user authentication and authorization concerns.
+          links:
+            - url: https://confluence.example.com/auth-system-overview
+              title: Architecture Overview
+              icon: docs
+        spec:
+          owner: team-security
+        ```
+
+2.  **Component Entities (`kind: Component`):**
+    *   Use the `spec.system` field to link a component to its parent system (e.g., `system: authentication-system`).
+    *   **`providesApi` and `consumesApi` Usage:**
+        *   These fields **MUST ONLY** be used to link to actual `API` entities defined within Backstage.
+        *   They are **NOT** for general linked services or dependencies that are not explicitly modeled as `API` entities in Backstage.
+        *   If a component provides or consumes an API, ensure that the API itself also has a `catalog-info.yaml` with `kind: API`.
+        *   Example referencing an API:
+            ```yaml
+            # In component's catalog-info.yaml
+            spec:
+              # ... other fields
+              providesApi:
+                - api:user-profile-api # References an entity with kind: API, name: user-profile-api
+              consumesApi:
+                - api:payment-gateway-api # References an entity with kind: API, name: payment-gateway-api
+            ```
+
+#### Example `catalog-info.yaml` for a Component
+
+```yaml
+# For a service component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: user-management-service
+  description: Handles user registration, profiles, and authentication flows.
+  annotations:
+    github.com/project-slug: 'my-org/user-management-repo'
+    backstage.io/techdocs-ref: 'dir:./docs' # TechDocs are in a 'docs' subfolder
+spec:
+  type: service
+  lifecycle: production
+  owner: team-a
+  system: authentication-system # Links to the 'authentication-system' System entity
+  dependsOn:
+    - component:database-service # Depends on a database component
+  providesApi:
+    - api:user-profile-api # Provides an API for user profiles
+  consumesApi:
+    - api:external-notification-api # Consumes an external notification API
+  links:
+    - url: https://jira.example.com/browse/UM
+      title: Jira Project
+      icon: dashboard
+```
+
+### Step 3: Verify and Register
+
+Once all `catalog-info.yaml` files are created:
+1.  **Validate locally:** Use the Backstage CLI (`backstage-cli catalog:validate`) if available, or a YAML linter, to ensure correctness.
+2.  **Register in Backstage:** Add the `catalog-info.yaml` files to your Backstage instance, typically by defining a `Location` entity that points to the repository containing these files.
+
+---
+
+**Need more information on Backstage catalog YAML structure or best practices?**
+
+Feel free to use the Context7 tool to query for official Spotify Backstage documentation by asking questions like:
+*   "Show me documentation for Backstage Component entity spec."
+*   "What are the best practices for Backstage catalog-info.yaml?"
+*   "How do I define an API entity in Backstage?"
+"""
